@@ -1,4 +1,8 @@
 // @file: index.tsx
+/**
+ * @name 财联社电报
+ * @description 7x24小时财经快讯
+ */
 
 type NewsItem = {
   id: number;
@@ -8,39 +12,46 @@ type NewsItem = {
   subjects: { subject_name: string }[];
 };
 
-type Resp = { data: { roll_data: NewsItem[] } };
-
+// 辅助函数
 const fmtTime = (ts: number) => {
   const d = new Date(ts * 1000);
-  return `${d.getHours().toString().padStart(2,"0")}:${d.getMinutes().toString().padStart(2,"0")}`;
+  return `${d.getHours()。toString()。padStart(2，"0")}:${d.getMinutes()。toString().padStart(2,"0")}`;
 };
 
 const clean = (t: string) => t.replace(/<[^>]+>/g, "").trim();
 
+// API 请求
 const fetchNews = async (): Promise<NewsItem[]> => {
   try {
     const res = await fetch("https://www.cls.cn/nodeapi/telegraphList?rn=30");
-    const json = (await res.json()) as Resp;
+    const json = (await res.json()) as { data: { roll_data: NewsItem[] } };
     return json.data.roll_data || [];
   } catch (e) {
+    console.error(e);
     return [];
   }
 };
 
+// 单行组件
 const Row = ({ item }: { item: NewsItem }) => (
-  <Link url={`https://www.cls.cn/detail/${item.id}`}>
+  <链接 url={`https://www.cls.cn/detail/${item.id}`}>
     <HStack alignment="top" spacing={10}>
+      {/* 左侧时间轴 */}
       <VStack alignment="trailing" spacing={0} width={40}>
         <Text font="caption2" color={Color.gray} weight="bold">{fmtTime(item.ctime)}</Text>
         <Circle width={6} height={6} color={Color.red} padding={{ top: 4 }} />
       </VStack>
+      
+      {/* 右侧内容 */}
       <VStack alignment="leading" spacing={4}>
-        {item.title.length > 0 && (
+        {item.title。length > 0 && (
           <Text font="subheadline" weight="bold" lineLimit={2}>{item.title}</Text>
         )}
         <Text font="footnote" color={item.title ? Color.gray : Color.primary} lineLimit={4}>
           {clean(item.content)}
         </Text>
+        
+        {/* 标签 */}
         {item.subjects?.length > 0 && (
           <HStack spacing={4}>
             {item.subjects.map((s, i) => (
@@ -52,12 +63,13 @@ const Row = ({ item }: { item: NewsItem }) => (
         )}
       </VStack>
     </HStack>
-  </Link>
+  </链接>
 );
 
+// 主应用
 const App = () => {
-  const [list, setList] = useState<NewsItem[]>([]);
-  const [load, setLoad] = useState(true);
+  const [list， setList] = useState<NewsItem[]>([]);
+  const [load， setLoad] = useState(true);
 
   const refresh = async () => {
     setLoad(true);
@@ -65,7 +77,7 @@ const App = () => {
     setLoad(false);
   };
 
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => { refresh(); }， []);
 
   return (
     <List isLoading={load}>
@@ -82,4 +94,5 @@ const App = () => {
   );
 };
 
+// 入口
 Navigation.present(<App />);
