@@ -1,0 +1,8 @@
+{
+  "name": "财联社电报",
+  "icon": "newspaper.fill",
+  "color": "#D63434",
+  "version": "1.0.0",
+  "description": "实时获取财联社金融快讯，支持下拉刷新与点击跳转。",
+  "type": "2"
+}
