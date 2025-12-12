@@ -2,14 +2,14 @@ name: Auto Build Scripting
 on:
   push:
     paths:
-      - 'scripts/**'    # 监听 scripts 文件夹修改
-      - '.github/workflows/build.yml' # 监听本文件修改
+      - 'scripts/**'
+      - '.github/workflows/build.yml'
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write   # 必须给写权限，否则无法生成文件
+      contents: write
     
     steps:
     - uses: actions/checkout@v3
@@ -24,39 +24,39 @@ jobs:
         import os
         import json
 
-        # 定义目录
         SCRIPTS_DIR = 'scripts'
         DIST_DIR = 'dist'
         
-        # 创建 dist 目录
         if not os.path.exists(DIST_DIR):
             os.makedirs(DIST_DIR)
 
-        # 遍历 scripts 下的子文件夹
         if os.path.exists(SCRIPTS_DIR):
             for folder in os.listdir(SCRIPTS_DIR):
                 folder_path = os.path.join(SCRIPTS_DIR, folder)
                 config_path = os.path.join(folder_path, 'config.json')
                 index_path = os.path.join(folder_path, 'index.tsx')
                 
-                # 只有当 config.json 和 index.tsx 都存在时才打包
                 if os.path.isdir(folder_path) and os.path.exists(config_path) and os.path.exists(index_path):
                     print(f"📦 Packaging {folder}...")
                     try:
-                        # 读取配置
+                        # 读取配置 (允许 UTF-8)
                         with open(config_path, 'r', encoding='utf-8') as f:
                             meta = json.load(f)
+                        
                         # 读取代码
                         with open(index_path, 'r', encoding='utf-8') as f:
                             code = f.read()
                         
-                        # 合并
+                        # 合并代码
                         meta['script'] = code
                         
-                        # 写入 dist
+                        # ⚠️ 关键修改：
+                        # 1. ensure_ascii=True: 将中文转义为 \uXXXX，防止乱码干扰
+                        # 2. separators=(',', ':'): 去除所有空格和换行，压缩成单行
                         output_path = os.path.join(DIST_DIR, f"{folder}.scripting")
                         with open(output_path, 'w', encoding='utf-8') as f:
-                            json.dump(meta, f, ensure_ascii=False, indent=2)
+                            json.dump(meta, f, ensure_ascii=True, separators=(',', ':'))
+                            
                         print(f"✅ Generated: {output_path}")
                     except Exception as e:
                         print(f"❌ Error: {e}")
@@ -69,12 +69,10 @@ jobs:
       run: |
         git config --global user.name 'GitHub Action'
         git config --global user.email 'action@github.com'
-        # 强制添加 dist 文件夹
         git add dist/
-        # 检查是否有变动
         if git diff --staged --quiet; then
           echo "No changes to commit"
         else
-          git commit -m "🤖 Auto build .scripting files"
+          git commit -m "🤖 Build compact JSON"
           git push
         fi
