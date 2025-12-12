@@ -1,0 +1,79 @@
+name: Auto Build Scripting
+on:
+  push:
+    paths:
+      - 'scripts/**' # 监听 scripts 文件夹下的变动
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # 赋予写权限以便提交生成的文件
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+        
+    - name: Build .scripting files
+      run: |
+        import os
+        import json
+
+        # 1. 配置路径
+        SCRIPTS_DIR = 'scripts'
+        DIST_DIR = 'dist'
+        
+        if not os.path.exists(DIST_DIR):
+            os.makedirs(DIST_DIR)
+
+        # 2. 遍历 scripts 下的所有文件夹
+        for folder in os.listdir(SCRIPTS_DIR):
+            folder_path = os.path.join(SCRIPTS_DIR, folder)
+            config_path = os.path.join(folder_path, 'config.json')
+            index_path = os.path.join(folder_path, 'index.tsx')
+            
+            # 只有当 config.json 和 index.tsx 都存在时才打包
+            if os.path.isdir(folder_path) and os.path.exists(config_path) and os.path.exists(index_path):
+                print(f"📦 Packaging {folder}...")
+                
+                try:
+                    # 读取配置
+                    with open(config_path, 'r') as f:
+                        meta = json.load(f)
+                    
+                    # 读取代码
+                    with open(index_path, 'r') as f:
+                        code = f.read()
+                    
+                    # 合并
+                    meta['script'] = code
+                    
+                    # 写入 dist 文件夹
+                    output_filename = f"{folder}.scripting"
+                    output_path = os.path.join(DIST_DIR, output_filename)
+                    
+                    with open(output_path, 'w') as f:
+                        json.dump(meta, f, ensure_ascii=False, indent=2)
+                        
+                    print(f"✅ Generated: {output_path}")
+                except Exception as e:
+                    print(f"❌ Error packaging {folder}: {e}")
+
+      shell: python
+
+    - name: Commit and Push
+      run: |
+        git config --global user.name 'GitHub Action'
+        git config --global user.email 'action@github.com'
+        git add dist/*.scripting
+        # 如果有变动才提交
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "🤖 Auto build .scripting files"
+          git push
+        fi
