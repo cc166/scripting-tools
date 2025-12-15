@@ -1,9 +1,7 @@
 {
-  "id": "cls_telegraph_v1",
+  "id": "cls_news",
   "name": "财联社电报",
-  "version": "1.0.0",
-  "author": "YourName",
-  "icon": "newspaper.fill",
-  "main": "main.tsx",
-  "description": "实时获取财联社全球财经资讯。"
+  "version": "1.0",
+  "icon": "newspaper",
+  "main": "main.tsx"
 }
